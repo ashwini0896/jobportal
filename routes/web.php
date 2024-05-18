@@ -1,5 +1,8 @@
 <?php
 
+use App\Http\Controllers\HomeController;
+use App\Http\Controllers\JobApplicationController;
+use App\Http\Controllers\JobController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -14,9 +17,23 @@ use Illuminate\Support\Facades\Route;
 */
 
 Route::get('/', function () {
-    return view('welcome');
+    return view('auth.login');
 });
 
 Auth::routes();
 
-Route::get('/home', [App\Http\Controllers\HomeController::class, 'index'])->name('home');
+Route::group(['middleware' => 'auth'], function () {
+    Route::get('jobs', [JobController::class, 'index'])->name('jobs.index');
+    Route::get('jobs/{job}', [JobController::class, 'show'])->name('jobs.show');
+    Route::post('jobs/{job}/apply', [JobApplicationController::class, 'apply'])->name('jobs.apply');
+    Route::get('user/dashboard', [HomeController::class, 'userDashboard'])->name('user.dashboard');
+});
+
+
+Route::group(['middleware' => ['auth', 'admin'], 'prefix' => 'admin'], function () {
+    Route::get('dashboard', [HomeController::class, 'index'])->name('admin.dashboard');
+    Route::resource('jobs', JobController::class)->except(['index', 'show']);
+    Route::get('job-applications', [JobApplicationController::class,'index'])->name('applications.index');
+    Route::delete('applications/{id}', [JobApplicationController::class, 'destroy'])->name('applications.destroy');
+    Route::get('applications/{id}/download', [JobApplicationController::class, 'downloadResume'])->name('applications.download');
+});
